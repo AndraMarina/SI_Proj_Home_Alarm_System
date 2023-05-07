@@ -12,7 +12,7 @@ int CAMERA_2_SENSOR = A1;
 //I2C LCD Display Pin & Init
 // SDA = A4
 // SCL = A5
-int I2C_ADDRESS = 0x27;
+int I2C_ADDRESS = 0x27; //Determined by running the i2c_addr_finc.ino file
 LiquidCrystal_I2C lcd(I2C_ADDRESS, 16, 2);
 
 // Keypad Pins & Init
@@ -46,6 +46,7 @@ int BUZZER = 13;
 bool enter_pin = false;
 int pin_len_count = 0;
 unsigned char pin_str[5];
+int pir_threshold = 20;
 
 int new_alarm_state = -1;
 int init_alarm_state = -1;
@@ -90,10 +91,8 @@ void blink_led(int led_pin){
 int detect_movement_in_camera(int cameraPin){
   int CAMERA_SENSOR_STATE = 0;
 	int CAMERA_SENSOR_READ = analogRead(cameraPin);
+  //Map analog value from analogRead(10 bits) to 8 bits
   CAMERA_SENSOR_STATE = map(CAMERA_SENSOR_READ, 0, 1023, 0, 255);
-  	
-  //Serial.print("Camera Sensor State: ");
-  //Serial.println(CAMERA_SENSOR_STATE);
   delay(20);
   return CAMERA_SENSOR_STATE;
 }
@@ -105,20 +104,20 @@ void alarm_system_state(bool show_lcd, bool silent){
   int camera2State = detect_movement_in_camera(A1);
   
   	
-  if(camera1State < 10 && camera2State < 10){
+  if(camera1State <= pir_threshold && camera2State <= pir_threshold){
    	if(show_lcd == true){
     	lcd.clear();
     	lcd.print("Zone libere!");
     }
   } 
   else {
-    if(camera1State > 10 && camera2State > 10){
-    	Serial.println("Alerta camera 1 & 2");	
+    if(camera1State > pir_threshold && camera2State > pir_threshold){
+    	Serial.println("Alerta ambele camere");	
       if(show_lcd == true){
         lcd.clear();
-        lcd.print("Alerta camera 1");
+        lcd.print("Alerta ambele ");
         lcd.setCursor(0,1);
-        lcd.print("Alerta camera 1");
+        lcd.print("camere!");
       }
     
       if(silent == false){
@@ -131,7 +130,7 @@ void alarm_system_state(bool show_lcd, bool silent){
       }
     } 
     else {
-      if(camera1State > 10){
+      if(camera1State > pir_threshold){
         Serial.println("Alerta camera 1");
         if(show_lcd == true){
           lcd.clear();
@@ -145,7 +144,7 @@ void alarm_system_state(bool show_lcd, bool silent){
         }
       }
       
-      if(camera2State > 10){
+      if(camera2State > pir_threshold){
         Serial.println("Alerta camera 2");
         if(show_lcd == true){
           lcd.clear();
@@ -160,7 +159,7 @@ void alarm_system_state(bool show_lcd, bool silent){
       }
     }
   }
-    delay(10);
+    delay(5);
 }
 
 // Engage Servomotor to close the door
